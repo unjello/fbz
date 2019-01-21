@@ -4,4 +4,4 @@ version = "0.1.0"
 authors = ["Andrzej Lichnerowicz <andrzej@lichnerowicz.pl>"]
 
 [dependencies]
-winit = "0.17"
+x11 = "2.18.1"

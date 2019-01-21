@@ -4,4 +4,4 @@ version = "0.1.0"
 authors = ["Andrzej Lichnerowicz <andrzej@lichnerowicz.pl>"]
 
 [dependencies]
-x11 = "2.18.1"
+x11-dl = "2.18.3"

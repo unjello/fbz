@@ -2,7 +2,7 @@ extern crate x11_dl;
 use x11_dl::xlib;
 use std::ptr::{ null, null_mut};
 use std::os::raw::{
-    c_int, c_uint, c_char
+    c_int, c_uint, c_char, c_ulong
 };
 use std::mem;
 use std::ffi::CString;
@@ -17,7 +17,13 @@ pub struct WindowOptions {
     pub fullscreen: bool,
 }
 
-pub struct Window;
+pub struct Window {
+  handle: u64,
+  display: *mut xlib::Display,
+  xlib: xlib::Xlib,
+  wm_delete_window: c_ulong,
+  wm_protocols: c_ulong,
+}
 
 /*fn list_pixmap_formats(display: *mut xlib::Display, xlib: &xlib::Xlib) -> &[xlib::XPixmapFormatValues] {
   unsafe {
@@ -39,7 +45,7 @@ impl Window {
         };
 
         unsafe {
-           let xlib = xlib::Xlib::open().unwrap();
+           let xlib  = xlib::Xlib::open().unwrap();
 
           let display =  (xlib.XOpenDisplay)(null());
           if display == null_mut() {
@@ -77,33 +83,54 @@ impl Window {
           // Show window.
           (xlib.XMapWindow)(display, window);
 
-          // Main loop.
-          let mut event: xlib::XEvent = mem::uninitialized();
+          /*// Main loop.
 
           loop {
-              (xlib.XNextEvent)(display, &mut event);
+ 
+          }
+
+*/
+          Ok(Window {
+            handle: window,
+            display,
+            xlib,
+            wm_delete_window,
+            wm_protocols
+          })
+        }
+  }
+
+  pub fn should_close(&self) -> bool {
+    let mut should_we = false;
+    unsafe {
+          let mut event: xlib::XEvent = mem::uninitialized();
+             (self.xlib.XNextEvent)(self.display, &mut event);
 
               match event.get_type() {
                   xlib::ClientMessage => {
                       let xclient = xlib::XClientMessageEvent::from(event);
 
-                      if xclient.message_type == wm_protocols && xclient.format == 32 {
+                      if xclient.message_type == self.wm_protocols && xclient.format == 32 {
                           let protocol = xclient.data.get_long(0) as xlib::Atom;
 
-                          if protocol == wm_delete_window {
-                              break;
+                          if protocol == self.wm_delete_window {
+                              should_we = true;
                           }
                       }
                   },
 
                   _ => ()
               }
-          }
 
-          // Shut down.
-          (xlib.XCloseDisplay)(display);
-        }
+    }
 
-        Ok(Window {})
+              should_we
+  
+  }
+
+  pub fn close(&self) {
+    unsafe {
+      (self.xlib.XCloseDisplay)(self.display);
+    }
   }
 }

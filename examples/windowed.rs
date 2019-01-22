@@ -10,4 +10,8 @@ fn main() {
       return;
     }
   };
+
+  while !window.should_close() {}
+
+  window.close();
 }

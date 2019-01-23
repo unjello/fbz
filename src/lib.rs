@@ -96,16 +96,8 @@ impl Window {
                 protocols.len() as c_int,
             );
 
-            // Show window.
             (xlib.XMapWindow)(display, window);
 
-            /*// Main loop.
-
-                      loop {
-
-                      }
-
-            */
             Ok(Window {
                 handle: window,
                 display,

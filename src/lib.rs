@@ -3,6 +3,7 @@ use std::ffi::CString;
 use std::mem;
 use std::os::raw::{c_char, c_int, c_uint, c_ulong};
 use std::ptr::{null, null_mut};
+use x11_dl::keysym::*;
 use x11_dl::xlib;
 
 mod error;
@@ -79,6 +80,12 @@ impl Window {
             );
             (xlib.XStoreName)(display, window, title.as_ptr() as *mut c_char);
 
+            (xlib.XSelectInput)(
+                display,
+                window,
+                xlib::StructureNotifyMask | xlib::KeyReleaseMask,
+            );
+
             // Hook close requests.
             let wm_protocols_str = CString::new("WM_PROTOCOLS").unwrap();
             let wm_delete_window_str = CString::new("WM_DELETE_WINDOW").unwrap();
@@ -108,6 +115,7 @@ impl Window {
         }
     }
 
+    #[allow(non_upper_case_globals)]
     pub fn should_close(&self) -> bool {
         let mut should_we = false;
         unsafe {
@@ -125,6 +133,14 @@ impl Window {
                             if protocol == self.wm_delete_window {
                                 should_we = true;
                             }
+                        }
+                    }
+
+                    xlib::KeyRelease => {
+                        let key = (self.xlib.XLookupKeysym)(&mut event.key, 0);
+                        match key as u32 {
+                            XK_Escape => should_we = true,
+                            _ => (),
                         }
                     }
 

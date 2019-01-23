@@ -1,11 +1,9 @@
 extern crate x11_dl;
-use x11_dl::xlib;
-use std::ptr::{ null, null_mut};
-use std::os::raw::{
-    c_int, c_uint, c_char, c_ulong
-};
-use std::mem;
 use std::ffi::CString;
+use std::mem;
+use std::os::raw::{c_char, c_int, c_uint, c_ulong};
+use std::ptr::{null, null_mut};
+use x11_dl::xlib;
 
 mod error;
 pub use self::error::Error;
@@ -18,11 +16,11 @@ pub struct WindowOptions {
 }
 
 pub struct Window {
-  handle: u64,
-  display: *mut xlib::Display,
-  xlib: xlib::Xlib,
-  wm_delete_window: c_ulong,
-  wm_protocols: c_ulong,
+    handle: u64,
+    display: *mut xlib::Display,
+    xlib: xlib::Xlib,
+    wm_delete_window: c_ulong,
+    wm_protocols: c_ulong,
 }
 
 /*fn list_pixmap_formats(display: *mut xlib::Display, xlib: &xlib::Xlib) -> &[xlib::XPixmapFormatValues] {
@@ -35,78 +33,96 @@ pub struct Window {
 }*/
 
 impl Window {
-  pub fn new(name: &str, width: usize, height: usize, _opts: WindowOptions) -> Result<Window> {
+    pub fn new(name: &str, width: usize, height: usize, _opts: WindowOptions) -> Result<Window> {
         let title = match CString::new(name) {
             Err(_) => {
                 println!("Unable to convert {} to c_string", name);
-                return Err(Error::WindowCreateFailed("Unable to set correct name".to_owned()));
+                return Err(Error::WindowCreateFailed(
+                    "Unable to set correct name".to_owned(),
+                ));
             }
             Ok(n) => n,
         };
 
         unsafe {
-           let xlib  = xlib::Xlib::open().unwrap();
+            let xlib = xlib::Xlib::open().unwrap();
 
-          let display =  (xlib.XOpenDisplay)(null());
-          if display == null_mut() {
-            panic!("display");
-          }
-          let screen = (xlib.XDefaultScreen)(display);
-          let depth = (xlib.XDefaultDepth)(display, screen);
-          let visual = (xlib.XDefaultVisual)(display, screen);
-          //let list = list_pixmap_formats(display, &xlib);
-          //let list : Vec<&xlib::XPixmapFormatValues> = list.iter().filter(|x| x.depth == depth).collect();
+            let display = (xlib.XOpenDisplay)(null());
+            if display == null_mut() {
+                panic!("display");
+            }
+            let screen = (xlib.XDefaultScreen)(display);
+            let depth = (xlib.XDefaultDepth)(display, screen);
+            let visual = (xlib.XDefaultVisual)(display, screen);
+            //let list = list_pixmap_formats(display, &xlib);
+            //let list : Vec<&xlib::XPixmapFormatValues> = list.iter().filter(|x| x.depth == depth).collect();
 
-          let screen_width = (xlib.XDisplayWidth)(display, screen);
-          let screen_height = (xlib.XDisplayHeight)(display, screen);
+            let screen_width = (xlib.XDisplayWidth)(display, screen);
+            let screen_height = (xlib.XDisplayHeight)(display, screen);
 
-          let default_root_window = (xlib.XDefaultRootWindow)(display);
+            let default_root_window = (xlib.XDefaultRootWindow)(display);
 
-          let mut window_attributes: xlib::XSetWindowAttributes = mem::uninitialized();
-          let window = (xlib.XCreateWindow)(display, default_root_window, (screen_width - width as i32) / 2,
-                    (screen_height - height as i32) / 2, width as u32, height as u32, 0, depth, xlib::InputOutput as c_uint,
-                    visual, xlib::CWBackPixel | xlib::CWBorderPixel | xlib::CWBackingStore,
-                    &mut window_attributes);
-           (xlib.XStoreName)(display, window, title.as_ptr() as *mut c_char);
+            let mut window_attributes: xlib::XSetWindowAttributes = mem::uninitialized();
+            let window = (xlib.XCreateWindow)(
+                display,
+                default_root_window,
+                (screen_width - width as i32) / 2,
+                (screen_height - height as i32) / 2,
+                width as u32,
+                height as u32,
+                0,
+                depth,
+                xlib::InputOutput as c_uint,
+                visual,
+                xlib::CWBackPixel | xlib::CWBorderPixel | xlib::CWBackingStore,
+                &mut window_attributes,
+            );
+            (xlib.XStoreName)(display, window, title.as_ptr() as *mut c_char);
 
-          // Hook close requests.
-          let wm_protocols_str = CString::new("WM_PROTOCOLS").unwrap();
-          let wm_delete_window_str = CString::new("WM_DELETE_WINDOW").unwrap();
+            // Hook close requests.
+            let wm_protocols_str = CString::new("WM_PROTOCOLS").unwrap();
+            let wm_delete_window_str = CString::new("WM_DELETE_WINDOW").unwrap();
 
-          let wm_protocols = (xlib.XInternAtom)(display, wm_protocols_str.as_ptr(), xlib::False);
-          let wm_delete_window = (xlib.XInternAtom)(display, wm_delete_window_str.as_ptr(), xlib::False);
+            let wm_protocols = (xlib.XInternAtom)(display, wm_protocols_str.as_ptr(), xlib::False);
+            let wm_delete_window =
+                (xlib.XInternAtom)(display, wm_delete_window_str.as_ptr(), xlib::False);
 
-          let mut protocols = [wm_delete_window];
+            let mut protocols = [wm_delete_window];
 
-          (xlib.XSetWMProtocols)(display, window, protocols.as_mut_ptr(), protocols.len() as c_int);
-          
-          // Show window.
-          (xlib.XMapWindow)(display, window);
+            (xlib.XSetWMProtocols)(
+                display,
+                window,
+                protocols.as_mut_ptr(),
+                protocols.len() as c_int,
+            );
 
-          /*// Main loop.
+            // Show window.
+            (xlib.XMapWindow)(display, window);
 
-          loop {
- 
-          }
+            /*// Main loop.
 
-*/
-          Ok(Window {
-            handle: window,
-            display,
-            xlib,
-            wm_delete_window,
-            wm_protocols
-          })
+                      loop {
+
+                      }
+
+            */
+            Ok(Window {
+                handle: window,
+                display,
+                xlib,
+                wm_delete_window,
+                wm_protocols,
+            })
         }
-  }
+    }
 
-  pub fn should_close(&self) -> bool {
-    let mut should_we = false;
-    unsafe {
-      let count = (self.xlib.XPending)(self.display);
-      for _ in 0..count {
-        let mut event: xlib::XEvent = mem::uninitialized();
-        (self.xlib.XNextEvent)(self.display, &mut event);
+    pub fn should_close(&self) -> bool {
+        let mut should_we = false;
+        unsafe {
+            let count = (self.xlib.XPending)(self.display);
+            for _ in 0..count {
+                let mut event: xlib::XEvent = mem::uninitialized();
+                (self.xlib.XNextEvent)(self.display, &mut event);
                 match event.get_type() {
                     xlib::ClientMessage => {
                         let xclient = xlib::XClientMessageEvent::from(event);
@@ -118,21 +134,19 @@ impl Window {
                                 should_we = true;
                             }
                         }
-                    },
+                    }
 
-                    _ => ()
+                    _ => (),
                 }
+            }
+        }
 
-      }
+        should_we
     }
 
-              should_we
-  
-  }
-
-  pub fn close(&self) {
-    unsafe {
-      (self.xlib.XCloseDisplay)(self.display);
+    pub fn close(&self) {
+        unsafe {
+            (self.xlib.XCloseDisplay)(self.display);
+        }
     }
-  }
 }

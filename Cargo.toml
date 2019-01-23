@@ -5,3 +5,6 @@ authors = ["Andrzej Lichnerowicz <andrzej@lichnerowicz.pl>"]
 
 [dependencies]
 x11-dl = "2.18.3"
+
+[dev-dependencies]
+time = "0.1.42"

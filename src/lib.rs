@@ -22,6 +22,11 @@ pub struct Window {
     xlib: xlib::Xlib,
     wm_delete_window: c_ulong,
     wm_protocols: c_ulong,
+    width: usize,
+    height: usize,
+    depth: i32,
+    visual: *mut xlib::Visual,
+    screen: i32,
 }
 
 /*fn list_pixmap_formats(display: *mut xlib::Display, xlib: &xlib::Xlib) -> &[xlib::XPixmapFormatValues] {
@@ -111,6 +116,11 @@ impl Window {
                 xlib,
                 wm_delete_window,
                 wm_protocols,
+                width,
+                height,
+                depth,
+                visual,
+                screen,
             })
         }
     }
@@ -156,5 +166,37 @@ impl Window {
         unsafe {
             (self.xlib.XCloseDisplay)(self.display);
         }
+    }
+
+    pub fn update(&self, buffer: &[u32]) -> Result<()> {
+        unsafe {
+            let image = (self.xlib.XCreateImage)(
+                self.display,
+                self.visual,
+                self.depth as u32,
+                xlib::ZPixmap,
+                0,
+                mem::transmute(&buffer[0]),
+                self.width as u32,
+                self.height as u32,
+                32,
+                (self.width as i32) * 4,
+            );
+            let gc = (self.xlib.XDefaultGC)(self.display, self.screen);
+            (self.xlib.XPutImage)(
+                self.display,
+                self.handle,
+                gc,
+                image,
+                0,
+                0,
+                0,
+                0,
+                self.width as u32,
+                self.height as u32,
+            );
+            (self.xlib.XFlush)(self.display);
+        }
+        Ok({})
     }
 }

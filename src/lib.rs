@@ -103,25 +103,27 @@ impl Window {
   pub fn should_close(&self) -> bool {
     let mut should_we = false;
     unsafe {
-          let mut event: xlib::XEvent = mem::uninitialized();
-             (self.xlib.XNextEvent)(self.display, &mut event);
+      let count = (self.xlib.XPending)(self.display);
+      for _ in 0..count {
+        let mut event: xlib::XEvent = mem::uninitialized();
+        (self.xlib.XNextEvent)(self.display, &mut event);
+                match event.get_type() {
+                    xlib::ClientMessage => {
+                        let xclient = xlib::XClientMessageEvent::from(event);
 
-              match event.get_type() {
-                  xlib::ClientMessage => {
-                      let xclient = xlib::XClientMessageEvent::from(event);
+                        if xclient.message_type == self.wm_protocols && xclient.format == 32 {
+                            let protocol = xclient.data.get_long(0) as xlib::Atom;
 
-                      if xclient.message_type == self.wm_protocols && xclient.format == 32 {
-                          let protocol = xclient.data.get_long(0) as xlib::Atom;
+                            if protocol == self.wm_delete_window {
+                                should_we = true;
+                            }
+                        }
+                    },
 
-                          if protocol == self.wm_delete_window {
-                              should_we = true;
-                          }
-                      }
-                  },
+                    _ => ()
+                }
 
-                  _ => ()
-              }
-
+      }
     }
 
               should_we

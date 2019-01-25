@@ -16,8 +16,8 @@ use self::os::linux as osImpl;
 pub struct Window(osImpl::Window);
 
 impl Window {
-    pub fn new(name: &str, width: usize, height: usize, _opts: WindowOptions) -> Result<osImpl::Window> {
-        osImpl::Window::new(name, width, height, _opts)
+    pub fn new(name: &str, width: usize, height: usize, _opts: WindowOptions) -> Result<Window> {
+        osImpl::Window::new(name, width, height, _opts).map(Window)
     }
 
     pub fn should_close(&self) -> bool {
